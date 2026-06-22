@@ -35,7 +35,7 @@ export default function HeroArticle() {
       </div>
 
       <div className="mt-6 max-w-3xl">
-        <CategoryChip slug={article.category} name={categoryName} />
+        <CategoryChip slug={article.category} name={categoryName} link={false} />
         <h1 className="mt-3 text-3xl md:text-5xl font-black text-[var(--color-text-primary)] leading-tight tracking-tight">
           {article.title}
         </h1>

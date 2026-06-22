@@ -34,6 +34,7 @@ export default function ArticleCard({ article }: ArticleCardProps) {
               ? '文化'
               : '科学'
           }
+          link={false}
         />
         <h3 className="mt-2 text-lg font-bold text-[var(--color-text-primary)] line-clamp-2 leading-snug">
           {article.title}
