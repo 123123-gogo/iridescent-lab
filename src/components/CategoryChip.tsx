@@ -19,7 +19,7 @@ export default function CategoryChip({ slug, name, count, link = true }: Categor
 
   if (!link) {
     return (
-      <span className="inline-block px-3 py-1 bg-[var(--color-primary-light)] text-[var(--color-primary)] rounded-full text-xs font-medium">
+      <span className="inline-block px-3 py-1 bg-white/10 text-zinc-300 rounded-full text-xs font-medium">
         {content}
       </span>
     )
@@ -28,7 +28,7 @@ export default function CategoryChip({ slug, name, count, link = true }: Categor
   return (
     <Link
       to={`/category/${slug}`}
-      className="inline-block px-3 py-1 bg-[var(--color-primary-light)] text-[var(--color-primary)] rounded-full text-xs font-medium hover:bg-[var(--color-primary)] hover:text-white transition-colors duration-150"
+      className="inline-block px-3 py-1 bg-white/10 text-zinc-300 rounded-full text-xs font-medium hover:bg-white/20 hover:text-white transition-colors duration-300"
     >
       {content}
     </Link>

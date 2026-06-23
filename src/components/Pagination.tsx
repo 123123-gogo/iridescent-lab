@@ -21,11 +21,11 @@ export default function Pagination({
   }
 
   const btnClass =
-    'min-w-[44px] h-11 px-3 rounded-lg text-sm font-medium transition-colors duration-150 flex items-center justify-center'
-  const activeClass = 'bg-[var(--color-primary)] text-white'
+    'min-w-[44px] h-11 px-3 rounded-lg text-sm font-medium transition-colors duration-300 flex items-center justify-center'
+  const activeClass = 'glass-strong text-white'
   const inactiveClass =
-    'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-primary)]'
-  const disabledClass = 'text-[var(--color-text-tertiary)] opacity-50 cursor-not-allowed'
+    'text-zinc-500 hover:bg-white/10 hover:text-white'
+  const disabledClass = 'text-zinc-700 opacity-50 cursor-not-allowed'
 
   return (
     <nav className="flex items-center justify-center gap-1" aria-label="分页导航">

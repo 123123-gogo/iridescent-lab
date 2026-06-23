@@ -6,28 +6,8 @@ export interface Category {
 }
 
 export const categories: Category[] = [
-  {
-    slug: 'technology',
-    name: '科技',
-    description: '人工智能、开源生态、数字社会与技术哲学',
-    articleCount: 3,
-  },
-  {
-    slug: 'design',
-    name: '设计',
-    description: '品牌设计、交互体验、视觉文化与设计思维',
-    articleCount: 3,
-  },
-  {
-    slug: 'culture',
-    name: '文化',
-    description: '阅读笔记、文化观察与人文思考',
-    articleCount: 2,
-  },
-  {
-    slug: 'science',
-    name: '科学',
-    description: '基础科学、生命科学与认知探索',
-    articleCount: 2,
-  },
+  { slug: 'experiments', name: '实验', description: '视觉实验、交互原型与技术探索', articleCount: 3 },
+  { slug: 'craft', name: '工艺', description: '品牌设计、排版艺术与设计系统', articleCount: 3 },
+  { slug: 'narrative', name: '叙事', description: '数字文化、创意写作与人类观察', articleCount: 2 },
+  { slug: 'theory', name: '理论', description: '认知科学、色彩理论与感知研究', articleCount: 2 },
 ]

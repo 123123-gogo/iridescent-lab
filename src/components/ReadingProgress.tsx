@@ -19,7 +19,7 @@ export default function ReadingProgress() {
       style={{
         width: `${progress}%`,
         height: '2px',
-        backgroundColor: 'var(--color-primary)',
+        backgroundColor: 'rgba(255,255,255,0.6)',
       }}
       role="progressbar"
       aria-valuenow={Math.round(progress)}

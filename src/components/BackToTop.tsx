@@ -12,7 +12,7 @@ export default function BackToTop() {
   return (
     <button
       onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-      className={`fixed bottom-8 right-8 w-11 h-11 bg-white border border-[var(--color-border)] rounded-full shadow-md flex items-center justify-center transition-all duration-200 ${
+      className={`fixed bottom-8 right-8 w-11 h-11 glass-strong rounded-full flex items-center justify-center transition-all duration-300 ${
         visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
       }`}
       title="回到顶部"

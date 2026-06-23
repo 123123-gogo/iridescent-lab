@@ -6,18 +6,8 @@ export interface Author {
 }
 
 export const authors: Author[] = [
-  {
-    slug: 'lin-yue',
-    name: '林悦',
-    avatar: 'https://picsum.photos/seed/author-linyue/64/64',
-    bio: '科技写作者，前互联网从业者。关注AI、开源与数字社会。',
-  },
-  {
-    slug: 'chen-mo',
-    name: '陈默',
-    avatar: 'https://picsum.photos/seed/author-chenmo/64/64',
-    bio: '设计师兼写作者。专注品牌设计、交互体验与视觉文化。',
-  },
+  { slug: 'mira', name: 'Mira', avatar: 'https://picsum.photos/seed/mira-avatar/64/64', bio: '创意技术专家，专注于生成艺术与交互装置。' },
+  { slug: 'kai', name: 'Kai', avatar: 'https://picsum.photos/seed/kai-avatar/64/64', bio: '视觉设计师，探索品牌系统与数字媒介的边界。' },
 ]
 
 export function getAuthor(slug: string): Author | undefined {

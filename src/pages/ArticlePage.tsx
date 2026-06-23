@@ -3,9 +3,7 @@ import { getArticleBySlug, getRelatedArticles } from '../data/articles'
 import { categories } from '../data/categories'
 import ReadingProgress from '../components/ReadingProgress'
 import BackToTop from '../components/BackToTop'
-import TableOfContents from '../components/TableOfContents'
 import ArticleCard from '../components/ArticleCard'
-import CategoryChip from '../components/CategoryChip'
 
 export default function ArticlePage() {
   const { slug } = useParams<{ slug: string }>()
@@ -14,334 +12,214 @@ export default function ArticlePage() {
   if (!article) {
     return (
       <div className="max-w-3xl mx-auto px-6 py-32 text-center">
-        <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
-          文章未找到
-        </h1>
-        <Link
-          to="/"
-          className="mt-4 inline-block text-[var(--color-text-link)] hover:underline"
-        >
-          返回首页
-        </Link>
+        <h1 className="text-2xl font-bold text-slate-900">Not Found</h1>
+        <Link to="/" className="mt-4 inline-block text-sm text-zinc-400 hover:text-white transition-colors duration-300">Back home</Link>
       </div>
     )
   }
 
   const relatedArticles = getRelatedArticles(article, 3)
-  const categoryName =
-    article.category === 'technology'
-      ? '科技'
-      : article.category === 'design'
-      ? '设计'
-      : article.category === 'culture'
-      ? '文化'
-      : '科学'
+  const cat = categories.find((c) => c.slug === article.category)
+
+  function decodeEntities(text: string): string {
+    return text
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+  }
+
+  function renderInline(text: string): React.ReactNode {
+    const decoded = decodeEntities(text)
+    // Parse links [text](url), images ![alt](url), bold **text**, inline code `text`
+    const pattern = /(!\[([^\]]*)\]\(([^)]+)\)|\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|`([^`]+)`)/g
+    const parts: React.ReactNode[] = []
+    let last = 0
+    let match: RegExpExecArray | null
+    while ((match = pattern.exec(decoded)) !== null) {
+      if (match.index > last) parts.push(decoded.slice(last, match.index))
+      if (match[1]) {
+        // Image ![alt](url)
+        parts.push(
+          <img
+            key={match.index}
+            src={match[3]}
+            alt={match[2]}
+            loading="lazy"
+            className="max-w-full h-auto rounded-lg my-6"
+          />
+        )
+      } else if (match[4]) {
+        // Link [text](url)
+        const isExternal = match[5].startsWith('http')
+        parts.push(
+          <a
+            key={match.index}
+            href={match[5]}
+            className="text-slate-700 underline decoration-slate-300 hover:decoration-slate-700 transition-colors duration-200"
+            {...(isExternal ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+          >
+            {match[4]}
+          </a>
+        )
+      } else if (match[6]) {
+        // Bold **text**
+        parts.push(<strong key={match.index} className="font-bold text-slate-900">{match[6]}</strong>)
+      } else if (match[7]) {
+        // Inline code `text`
+        parts.push(<code key={match.index} className="bg-slate-100 text-slate-600 text-sm px-1.5 py-0.5 rounded font-mono">{match[7]}</code>)
+      }
+      last = match.index + match[0].length
+    }
+    if (last < decoded.length) parts.push(decoded.slice(last))
+    return parts.length === 1 && typeof parts[0] === 'string' ? parts[0] : <>{parts}</>
+  }
 
   function renderMarkdown(content: string) {
     const lines = content.split('\n')
     const elements: React.ReactNode[] = []
     let inCodeBlock = false
     let codeContent = ''
-    let codeLang = ''
+    let listItems: React.ReactNode[] = []
+    let inList: 'ul' | 'ol' | null = null
+
+    function flushList() {
+      if (listItems.length > 0 && inList) {
+        const Tag = inList === 'ol' ? 'ol' : 'ul'
+        elements.push(
+          <Tag key={`list-${elements.length}`} className={inList === 'ol' ? 'list-decimal pl-6 my-4 space-y-1' : 'list-disc pl-6 my-4 space-y-1'}>
+            {listItems}
+          </Tag>
+        )
+        listItems = []
+        inList = null
+      }
+    }
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i]
+      const indent = line.match(/^(\s*)/)?.[1].length || 0
 
+      // Code block
       if (line.startsWith('```')) {
+        flushList()
         if (inCodeBlock) {
-          elements.push(
-            <pre key={`code-${i}`} className="bg-[var(--color-bg-tertiary)] p-4 rounded-md overflow-x-auto font-mono text-sm my-4">
-              <code>{codeContent.trim()}</code>
-            </pre>
-          )
+          elements.push(<pre key={`code-${i}`} className="bg-slate-100 rounded-xl p-5 overflow-x-auto font-mono text-sm text-slate-700 my-6"><code>{codeContent.trim()}</code></pre>)
           codeContent = ''
           inCodeBlock = false
-        } else {
-          inCodeBlock = true
-          codeLang = line.slice(3).trim()
-        }
+        } else { inCodeBlock = true }
         continue
       }
+      if (inCodeBlock) { codeContent += line + '\n'; continue }
 
-      if (inCodeBlock) {
-        codeContent += line + '\n'
-        continue
-      }
-
+      // H2
       if (line.startsWith('## ')) {
+        flushList()
         const text = line.slice(3)
         const id = text.replace(/[^\w一-鿿\s-]/g, '').trim().replace(/\s+/g, '-').toLowerCase()
-        elements.push(
-          <h2 key={i} id={id} className="text-2xl font-bold text-[var(--color-text-primary)] mt-10 mb-3 leading-tight">
-            {text}
-          </h2>
-        )
+        elements.push(<h2 key={i} id={id} className="text-2xl font-bold text-slate-900 mt-12 mb-4 leading-tight">{renderInline(text)}</h2>)
         continue
       }
-
+      // H3
       if (line.startsWith('### ')) {
+        flushList()
         const text = line.slice(4)
         const id = text.replace(/[^\w一-鿿\s-]/g, '').trim().replace(/\s+/g, '-').toLowerCase()
-        elements.push(
-          <h3 key={i} id={id} className="text-xl font-semibold text-[var(--color-text-primary)] mt-8 mb-2">
-            {text}
-          </h3>
-        )
+        elements.push(<h3 key={i} id={id} className="text-xl font-semibold text-slate-800 mt-8 mb-3">{renderInline(text)}</h3>)
         continue
       }
-
+      // Blockquote
       if (line.startsWith('> ')) {
-        elements.push(
-          <blockquote key={i} className="border-l-4 border-[var(--color-primary)] pl-4 italic text-sm text-[var(--color-text-secondary)] bg-[var(--color-bg-tertiary)] py-3 pr-4 rounded-r-md my-4">
-            {renderInline(line.slice(2))}
-          </blockquote>
-        )
+        flushList()
+        elements.push(<blockquote key={i} className="border-l-4 border-slate-200 pl-5 italic text-sm text-slate-500 py-3 my-5">{renderInline(line.slice(2))}</blockquote>)
+        continue
+      }
+      // Ordered list
+      if (line.match(/^\d+\. /) && indent === 0) {
+        if (inList !== 'ol') { flushList(); inList = 'ol' }
+        listItems.push(<li key={i} className="text-base text-slate-700 leading-relaxed">{renderInline(line.replace(/^\d+\.\s*/, ''))}</li>)
+        continue
+      }
+      // Unordered list
+      if ((line.startsWith('- ') || line.startsWith('* ')) && indent === 0) {
+        if (inList !== 'ul') { flushList(); inList = 'ul' }
+        listItems.push(<li key={i} className="text-base text-slate-700 leading-relaxed">{renderInline(line.slice(2))}</li>)
+        continue
+      }
+      // Nested list (indented)
+      if ((line.startsWith('  - ') || line.startsWith('  * ')) && inList) {
+        listItems.push(<li key={i} className="text-base text-slate-700 leading-relaxed ml-4">{renderInline(line.trim().slice(2))}</li>)
         continue
       }
 
-      if (line.startsWith('1. ') || line.match(/^\d+\. /)) {
-        const text = line.replace(/^\d+\.\s*/, '')
-        elements.push(
-          <li key={i} className="ml-6 list-decimal my-1 text-base text-[var(--color-reading-text)] font-reading leading-relaxed">
-            {renderInline(text)}
-          </li>
-        )
-        continue
-      }
-
-      if (line.startsWith('- ') || line.startsWith('* ')) {
-        const text = line.slice(2)
-        const nextIsList = i + 1 < lines.length && (lines[i + 1].startsWith('- ') || lines[i + 1].startsWith('* '))
-        elements.push(
-          <li key={i} className="ml-6 list-disc my-1 text-base text-[var(--color-reading-text)] font-reading leading-relaxed">
-            {renderInline(text)}
-          </li>
-        )
-        if (!nextIsList) {
-          elements.push(<div key={`spacer-${i}`} className="h-3" />)
-        }
-        continue
-      }
-
-      if (line.trim() === '') {
-        elements.push(<div key={i} className="h-3" />)
-        continue
-      }
-
-      elements.push(
-        <p key={i} className="text-base text-[var(--color-reading-text)] font-reading leading-relaxed">
-          {renderInline(line)}
-        </p>
-      )
+      flushList()
+      // Empty line
+      if (line.trim() === '') { elements.push(<div key={i} className="h-4" />); continue }
+      // Paragraph
+      elements.push(<p key={i} className="text-base text-slate-700 leading-relaxed">{renderInline(line)}</p>)
     }
-
+    flushList()
     return elements
   }
 
-  function renderInline(text: string): React.ReactNode {
-    const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
-    return parts.map((part, i) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i} className="font-bold">{part.slice(2, -2)}</strong>
-      }
-      if (part.startsWith('`') && part.endsWith('`')) {
-        return (
-          <code key={i} className="bg-[var(--color-bg-code)] text-[var(--color-text-code)] text-sm px-1.5 py-0.5 rounded-sm font-mono">
-            {part.slice(1, -1)}
-          </code>
-        )
-      }
-      return part
-    })
-  }
-
-  const allArticles = getRelatedArticles(article, 100)
-  const currentIndex = allArticles.findIndex((a) => a.slug === article.slug)
-  const prevArticle = allArticles.filter((_, i) => i === currentIndex + 1)[0]
-  const nextArticle = allArticles.filter((_, i) => i === currentIndex - 1)[0]
+  const allRelated = getRelatedArticles(article, 100)
+  const idx = allRelated.findIndex((a) => a.slug === article.slug)
+  const prev = allRelated[idx + 1]
+  const next = allRelated[idx - 1]
 
   return (
-    <div className="bg-[var(--color-reading-bg)]">
+    <div className="relative">
       <ReadingProgress />
       <BackToTop />
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex gap-8">
-          {/* Left sidebar - Related articles (desktop) */}
-          <aside className="hidden xl:block w-[240px] shrink-0">
-            <div className="sticky top-24">
-              <h4 className="text-xs font-semibold text-[var(--color-text-tertiary)] uppercase tracking-wider mb-4">
-                精选推荐
-              </h4>
-              <div className="space-y-4">
-                {relatedArticles.map((ra) => (
-                  <Link
-                    key={ra.slug}
-                    to={`/article/${ra.slug}`}
-                    className="block group"
-                  >
-                    <div className="aspect-[16/9] rounded-lg overflow-hidden mb-2">
-                      <img
-                        src={ra.coverImage}
-                        alt={ra.title}
-                        loading="lazy"
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                      />
-                    </div>
-                    <h5 className="text-sm font-medium text-[var(--color-text-primary)] line-clamp-2 leading-snug group-hover:text-[var(--color-text-link)] transition-colors duration-150">
-                      {ra.title}
-                    </h5>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </aside>
-
-          {/* Center - Article body */}
-          <article className="flex-1 min-w-0 max-w-[720px] mx-auto">
-            {/* Header */}
-            <header className="mb-8">
-              <CategoryChip slug={article.category} name={categoryName} />
-              <h1 className="mt-3 text-3xl md:text-4xl font-black text-[var(--color-text-primary)] leading-tight tracking-tight">
-                {article.title}
-              </h1>
-              <div className="mt-4 flex items-center gap-3">
-                <img
-                  src={article.author.avatar}
-                  alt={article.author.name}
-                  width="32"
-                  height="32"
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-                <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                  {article.author.name}
-                </span>
-                <span className="text-sm text-[var(--color-text-tertiary)]">·</span>
-                <time dateTime={article.publishedAt} className="text-sm text-[var(--color-text-tertiary)]">
-                  {article.publishedAt}
-                </time>
-                <span className="text-sm text-[var(--color-text-tertiary)]">·</span>
-                <span className="text-sm text-[var(--color-text-tertiary)]">
-                  {article.readingTime} 分钟阅读
-                </span>
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        <div className="flex gap-12">
+          <article className="flex-1 min-w-0 max-w-[720px] mx-auto bg-white rounded-3xl p-8 md:p-12 shadow-2xl">
+            <header className="mb-10">
+              {cat && <span className="text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em]">{cat.name}</span>}
+              <h1 className="mt-3 text-3xl md:text-4xl font-black text-slate-900 leading-tight tracking-tight">{article.title}</h1>
+              <div className="mt-5 flex items-center gap-3">
+                <img src={article.author.avatar} alt={article.author.name} width="32" height="32" className="w-8 h-8 rounded-full object-cover" />
+                <span className="text-sm font-medium text-slate-700">{article.author.name}</span>
+                <span className="text-slate-300">/</span>
+                <time dateTime={article.publishedAt} className="text-sm text-slate-400">{article.publishedAt}</time>
+                <span className="text-slate-300">/</span>
+                <span className="text-sm text-slate-400">{article.readingTime} min read</span>
               </div>
             </header>
 
-            {/* Cover image */}
             {article.coverImage && (
-              <img
-                src={article.coverImage}
-                alt={article.title}
-                className="w-full max-w-[720px] h-auto rounded-lg mb-8"
-                loading="lazy"
-              />
+              <img src={article.coverImage} alt={article.title} className="w-full max-w-[720px] h-auto rounded-2xl mb-10" loading="lazy" />
             )}
 
-            {/* TOC (mobile/tablet) */}
-            <TableOfContents content={article.content} />
+            <div className="text-slate-700">{renderMarkdown(article.content)}</div>
 
-            {/* Body */}
-            <div className="prose-custom">
-              {renderMarkdown(article.content)}
-            </div>
-
-            {/* Footer */}
-            <div className="mt-12 pt-8 border-t border-[var(--color-border)]">
-              {/* Tags */}
+            <footer className="mt-16 pt-8 border-t border-slate-200">
               <div className="flex flex-wrap gap-2 mb-8">
-                {article.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-3 py-1 bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] rounded-full text-xs font-medium"
-                  >
-                    {tag}
-                  </span>
-                ))}
+                {article.tags.map((tag) => <span key={tag} className="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-xs font-medium">{tag}</span>)}
               </div>
 
-              {/* Share buttons */}
-              <div className="flex items-center gap-4 mb-8">
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(window.location.href)
-                  }}
-                  className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-link)] transition-colors duration-150"
-                  title="复制链接"
-                >
-                  复制链接
-                </button>
-                <a
-                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${encodeURIComponent(window.location.href)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-link)] transition-colors duration-150"
-                  title="分享到 Twitter"
-                >
-                  Twitter
-                </a>
-                <a
-                  href={`mailto:?subject=${encodeURIComponent(article.title)}&body=${encodeURIComponent(window.location.href)}`}
-                  className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-link)] transition-colors duration-150"
-                  title="通过邮件分享"
-                >
-                  邮件
-                </a>
+              <div className="flex items-center gap-6 mb-10">
+                <button onClick={() => navigator.clipboard.writeText(window.location.href)} className="text-sm text-slate-400 hover:text-slate-700 transition-colors duration-300">Copy link</button>
+                <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${encodeURIComponent(window.location.href)}`} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:text-slate-700 transition-colors duration-300">Twitter</a>
               </div>
 
-              {/* Prev/Next */}
               <div className="grid grid-cols-2 gap-4 mb-12">
-                {prevArticle ? (
-                  <Link
-                    to={`/article/${prevArticle.slug}`}
-                    className="group p-4 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-primary)] transition-colors duration-150"
-                  >
-                    <span className="text-xs text-[var(--color-text-tertiary)]">
-                      上一篇
-                    </span>
-                    <p className="mt-1 text-sm font-medium text-[var(--color-text-primary)] line-clamp-2 group-hover:text-[var(--color-text-link)] transition-colors duration-150">
-                      {prevArticle.title}
-                    </p>
-                  </Link>
-                ) : (
-                  <div />
-                )}
-                {nextArticle ? (
-                  <Link
-                    to={`/article/${nextArticle.slug}`}
-                    className="group p-4 rounded-lg border border-[var(--color-border)] hover:border-[var(--color-primary)] transition-colors duration-150 text-right"
-                  >
-                    <span className="text-xs text-[var(--color-text-tertiary)]">
-                      下一篇
-                    </span>
-                    <p className="mt-1 text-sm font-medium text-[var(--color-text-primary)] line-clamp-2 group-hover:text-[var(--color-text-link)] transition-colors duration-150">
-                      {nextArticle.title}
-                    </p>
-                  </Link>
-                ) : (
-                  <div />
-                )}
+                {prev ? <Link to={`/article/${prev.slug}`} className="border border-slate-200 rounded-xl p-4 hover:border-slate-400 transition-all duration-300"><span className="text-xs text-slate-400">Previous</span><p className="mt-1 text-sm font-medium text-slate-700 line-clamp-2">{prev.title}</p></Link> : <div />}
+                {next ? <Link to={`/article/${next.slug}`} className="border border-slate-200 rounded-xl p-4 text-right hover:border-slate-400 transition-all duration-300"><span className="text-xs text-slate-400">Next</span><p className="mt-1 text-sm font-medium text-slate-700 line-clamp-2">{next.title}</p></Link> : <div />}
               </div>
 
-              {/* Related */}
               {relatedArticles.length > 0 && (
                 <div>
-                  <h3 className="text-lg font-bold text-[var(--color-text-primary)] mb-4">
-                    相关推荐
-                  </h3>
+                  <h3 className="text-lg font-bold text-slate-900 mb-5">Related</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {relatedArticles.map((ra) => (
-                      <ArticleCard key={ra.slug} article={ra} />
-                    ))}
+                    {relatedArticles.map((ra) => <ArticleCard key={ra.slug} article={ra} />)}
                   </div>
                 </div>
               )}
-            </div>
+            </footer>
           </article>
-
-          {/* Right sidebar - TOC (desktop) */}
-          <aside className="hidden lg:block w-[200px] shrink-0">
-            <TableOfContents content={article.content} />
-          </aside>
         </div>
       </div>
     </div>

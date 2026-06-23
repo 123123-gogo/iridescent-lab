@@ -54,8 +54,8 @@ export default function TableOfContents({ content }: TableOfContentsProps) {
 
   return (
     <>
-      <details className="lg:hidden mb-8 rounded-lg border border-[var(--color-border)]">
-        <summary className="px-4 py-3 text-sm font-semibold text-[var(--color-text-primary)] cursor-pointer select-none">
+      <details className="lg:hidden mb-8 rounded-xl border border-white/10 glass">
+        <summary className="px-4 py-3 text-sm font-semibold text-zinc-300 cursor-pointer select-none">
           目录
         </summary>
         <nav className="px-4 pb-4">
@@ -63,12 +63,12 @@ export default function TableOfContents({ content }: TableOfContentsProps) {
             <a
               key={h.id}
               href={`#${h.id}`}
-              className={`block text-sm py-1 transition-colors duration-150 ${
+              className={`block text-sm py-1 transition-colors duration-200 ${
                 h.level === 3 ? 'pl-4' : ''
               } ${
                 activeId === h.id
-                  ? 'text-[var(--color-primary)] font-medium'
-                  : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                  ? 'text-white font-medium'
+                  : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
               {h.text}
@@ -78,20 +78,20 @@ export default function TableOfContents({ content }: TableOfContentsProps) {
       </details>
 
       <nav className="hidden lg:block sticky top-24">
-        <h4 className="text-xs font-semibold text-[var(--color-text-tertiary)] uppercase tracking-wider mb-3">
+        <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
           目录
         </h4>
-        <div className="border-l-2 border-[var(--color-border)]">
+        <div className="border-l-2 border-white/10">
           {headings.map((h) => (
             <a
               key={h.id}
               href={`#${h.id}`}
-              className={`block text-sm py-1.5 transition-all duration-150 ${
+              className={`block text-sm py-1.5 transition-all duration-200 ${
                 h.level === 3 ? 'pl-6' : 'pl-4'
               } ${
                 activeId === h.id
-                  ? 'text-[var(--color-primary)] font-medium border-l-2 border-[var(--color-primary)] -ml-[2px]'
-                  : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border-l-2 border-transparent -ml-[2px]'
+                  ? 'text-white font-medium border-l-2 border-white -ml-[2px]'
+                  : 'text-zinc-500 hover:text-zinc-300 border-l-2 border-transparent -ml-[2px]'
               }`}
             >
               {h.text}

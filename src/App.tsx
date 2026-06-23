@@ -13,21 +13,13 @@ export default function App() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
 
   return (
-    <div className="min-h-screen flex flex-col relative">
-      <div className="fixed inset-0 z-0 pointer-events-none" style={{ width: '1080px', height: '1080px' }}>
-        <Iridescence
-          speed={2.2}
-          amplitude={0.55}
-          mouseReact
-        />
+    <div className="min-h-screen flex flex-col relative bg-[#09090b]">
+      <div className="fixed inset-0 z-0" style={{ width: '100vw', height: '100vh' }}>
+        <Iridescence speed={2.2} amplitude={0.55} mouseReact />
       </div>
-
       <div className="relative z-10 flex flex-col min-h-screen">
         <Navbar onSearchOpen={() => setIsSearchOpen(true)} />
-        <SearchOverlay
-          isOpen={isSearchOpen}
-          onClose={() => setIsSearchOpen(false)}
-        />
+        <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
         <main className="flex-1 pt-16">
           <Routes>
             <Route path="/" element={<Home />} />
